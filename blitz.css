@@ -1,0 +1,25 @@
+body {
+  background-color: #222;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.title {
+  font-family: "Oldenburg", serif;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 70px;
+  color: #e7ba49;
+  text-align: center;
+}
+
+#gameCanvas {
+  background-color: #000;
+  border: 1px solid #666;
+  border-radius: 10px;
+  padding: 10px;
+}
