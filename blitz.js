@@ -6,9 +6,11 @@ const PLANE_STEP = 20;
 const CANVAS_WIDTH = 1000;
 const CANVAS_HEIGHT = 600;
 
-let currentLevel = 1;
-let ANIMATION_STEP = 1.5;
-
+let currentLevel = 0;
+let animationStep = 0.5;
+let sparsity = 0.7;
+let score = 0;
+let nLives = 3;
 
 class Building {
   constructor(x, y, width, height, color) {
@@ -26,6 +28,7 @@ class Building {
       ctx.fillStyle = 'red';
       this.y += BUILDING_STEP;
       this.height -= BUILDING_STEP;
+      score += BUILDING_STEP;
     }
 
     // check if the plane is hitting the building
@@ -57,7 +60,7 @@ class Plane extends EventTarget{
 
   move() {
     if (!this.isDone) {
-      this.x += ANIMATION_STEP;
+      this.x += animationStep;
       if (this.x > CANVAS_WIDTH) {
         this.x = 0;
         this.y += PLANE_STEP;
@@ -68,9 +71,8 @@ class Plane extends EventTarget{
   down() {
     if (this.y + PLANE_HEIGHT < CANVAS_HEIGHT) {
       this.y += BUILDING_STEP;
-    }
-
-    if (this.y + PLANE_HEIGHT > CANVAS_HEIGHT) {
+      this.x -= PLANE_STEP/2;
+    } else {
       this.isDone = true;
       console.log('success!');
       this.dispatchEvent(new Event('success'));
@@ -109,7 +111,7 @@ class Bomb {
 
   move() {
     if (this.isDropping) {
-      this.y += ANIMATION_STEP;
+      this.y += animationStep;
       if (this.y > CANVAS_HEIGHT) {
         this.isDropping = false;
       }
@@ -130,11 +132,54 @@ class Bomb {
   }
 }
 
+function increaseLevel() {
+  currentLevel++;
+  let sparseMap = [0, 0.8, 0.5]
+  sparsity = sparseMap[currentLevel % 3];
+
+  if (currentLevel % 3 == 1)
+    animationStep++;
+
+  console.log('level', currentLevel, sparsity, animationStep);
+}
+
 function getRandomColor() {
   return '#' + Math.floor(Math.random()*16777215).toString(16);
 }
 
-function redraw(ctx) {
+function setValueinDOM(classElem, val) {
+  const elem = document.getElementsByClassName(classElem)[0];
+  if (elem) {
+    elem.innerHTML = val;
+  }
+}
+
+function setLives() {
+  const elem = document.getElementsByClassName('lives')[0];
+  if (elem) {
+    let html = '';
+    for (let i = 0; i < nLives; i++) {
+      html += '<i class="fa fa-plane"></i>';
+    }
+    elem.innerHTML = html;
+  }
+}
+
+function redrawScore() {
+  setValueinDOM('score', score);
+  setValueinDOM('level', currentLevel);
+  setLives();
+}
+
+let prevTime = 0;
+
+function redraw(ctx, time) {
+  if (prevTime == 0) {
+    prevTime = time;
+  }
+  const deltaTime = time - prevTime;
+  prevTime = time;
+  //console.log('deltaTime', deltaTime, ' fps:', 1000 / deltaTime);
   ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
   for (let i = 0; i<40; i++) {
@@ -158,14 +203,43 @@ function redraw(ctx) {
   ctx.strokeStyle = '#888';
   ctx.stroke();
 
-  requestAnimationFrame(() => redraw(ctx));
+  redrawScore();
+
+  setTimeout(() => {
+    redraw(ctx);
+  }, 1000 / 200);
+
+  //requestAnimationFrame((time) => redraw(ctx, time));
 }
 
 let buildings = [];
 let plane = null;
 let bomb = null;
 
+function createNewPlane() {
+  plane = new Plane(0, 45);
+  plane.addEventListener('success', () => {
+    window.setTimeout(() => {
+      init();
+    }, 1000);
+  });
+
+  plane.addEventListener('fail', () => {
+    console.log('event fail!');
+    nLives--;
+    setLives();
+    if (nLives > 0) {
+      window.setTimeout(() => {
+        createNewPlane();
+      }, 1000);
+    } else {
+      console.log('game over!');
+    }
+  });
+}
+
 function init() {
+  increaseLevel();
   console.log('init', currentLevel);
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
@@ -178,10 +252,9 @@ function init() {
 
   buildings = [];
 
-  let fps = 60;
   for (let i = 0; i < 40; i++) {
 
-    const height =  (Math.random() > 0.7) ? Math.floor(Math.random() * 40 * BUILDING_STEP) : 0;
+    const height =  (Math.random() > sparsity) ? Math.floor((Math.random() * 19 + 2) * BUILDING_STEP) : 0;
     //const height = 0;
     const x = i * BUILDING_WIDTH;
     const y = CANVAS_HEIGHT - height;
@@ -190,31 +263,25 @@ function init() {
     buildings.push(new Building(x, y, width, height, color));
   }
 
-  plane = new Plane(0, 25);
   bomb = new Bomb(0, 0);
-
-  window.addEventListener('keydown', (e) => {
-    if (e.key === ' ' && !bomb.isDropping) {
-      bomb.drop(plane.x, plane.y);
-    } else if ((e.key === 'D' || e.key === 'd') && !plane.isDone) {
-      plane.down();
-    }
-  });
-
-  plane.addEventListener('success', () => {
-    console.log('event success!');
-    currentLevel++;
-    ANIMATION_STEP++;
-    init();
-  });
-
-  plane.addEventListener('fail', () => {
-    console.log('event fail!');
-  });
-
+  createNewPlane();
   return ctx;
 
 }
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === ' ' && !bomb.isDropping) {
+    bomb.drop(plane.x, plane.y);
+  } else if ((e.key === 'D' || e.key === 'd') && !plane.isDone) {
+    plane.down();
+  }
+
+  if (e.key == 'l') {
+    window.setTimeout(() => {
+      init();
+    }, 1000);
+  }
+});
 
 let ctx = init();
 redraw(ctx);

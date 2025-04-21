@@ -9,12 +9,29 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Oldenburg&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="reset.css">
     <link rel="stylesheet" href="blitz.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   </head>
   <body>
     <div class="title">
       BLITZ
     </div>
-    <canvas id="gameCanvas"></canvas>
+    <div class="game-container">
+      <canvas id="gameCanvas"></canvas>
+      <div class="score-bar">
+        <div class="lives-section">
+          <span class="lives-label label">Lives:</span>
+          <span class="lives"></span>
+        </div>
+        <div class="score-section">
+          <span class="score-label label">Score:</span>
+          <div class="score">0</div>
+        </div>
+        <div class="level-section">
+          <span class="level-label label">Level:</span>
+          <div class="level">1</div>
+        </div>  
+      </div>
+    </div>
     <script src="blitz.js"></script>
   </body>
 </html>
